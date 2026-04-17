@@ -1,0 +1,48 @@
+# UE5 Generated Files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+
+# IDE Files
+.vs/
+.vscode/
+*.VC.db
+*.VC.db-shm
+*.VC.db-wal
+*.VC.opendb
+
+# Compiled Assets
+*.slo
+*.lo
+*.o
+*.obj
+
+# Visual Studio
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Unreal Specific
+*.uasset.tmp
+*.umap.tmp
+
+# Crash Reports
+CrashReportClient/
+
+# Build Receipts
+*.target
+*.modules
+
+# Ignore all *_BuiltData.uasset (static lighting data, huge)
+*_BuiltData.uasset
+
+# Keep WorkBuddy memory (DO NOT ignore)
+!.workbuddy/
+!.workbuddy/**
