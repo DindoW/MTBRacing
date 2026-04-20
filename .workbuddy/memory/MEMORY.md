@@ -14,7 +14,7 @@
 
 | 技术 | 说明 |
 |------|------|
-| 引擎 | UE5.3+ |
+| 引擎 | UE 5.4 源码版（`C:\Users\Dindo\Documents\repo\UE_5.4`） |
 | 载具 | Chaos Vehicle System |
 | 能力 | Gameplay Ability System (GAS) |
 | 动画 | Animation Blueprint + Control Rig |
@@ -26,6 +26,22 @@
 - **写代码**：Visual Studio / Rider + CodeBuddy 插件
 - **规划讨论**：WorkBuddy（工作区设在项目目录）
 - **版本控制**：Git + GitHub (https://github.com/DindoW/MTBRacing.git)
+
+## ⚠️ AI 协作模式（重要原则）
+
+**用户要自己学 UE5，所有代码和操作由用户亲自完成。AI 的角色是指导老师，不是代写。**
+
+AI 要做的：
+- 讲清架构设计、API 选型、方案对比
+- 指路官方文档、引擎源码位置、Editor 操作步骤
+- 口述代码**应该长什么样**（关键结构、关键宏、关键签名），不写完整文件
+- 读用户代码做 code review
+- 编译错误诊断、崩溃分析
+
+AI 不做的：
+- ❌ 直接写完整代码文件交付
+- ❌ 执行改仓库的命令（除文档/memory 之外）
+- ❌ 替用户做任何他能自己做的操作
 
 ## 当前进度
 
@@ -43,6 +59,12 @@
 - 选择 Chaos Vehicle System（而非 Chaos Modular Vehicle），因为更简单直接，适合学习阶段
 - 确定 C++/Blueprint 混合开发策略：C++ 实现核心逻辑，Blueprint 配置数据
 - 开发顺序：单机载具 → GAS → 网络（每阶段保持可运行状态）
+
+### 2026-04-20
+- 确认使用 **UE 5.4 源码版**，引擎位于 `C:\Users\Dindo\Documents\repo\UE_5.4`
+- 工作区路径保留空格（`Unreal Projects`），不改
+- **插件按需加载原则**：不提前启用 ChaosVehicles、GameplayAbilities 等，哪一步需要再加哪个，避免无谓编译开销
+- UE 项目壳由用户手动在 Launcher/Editor 中创建（Blank C++ 模板，不带 Starter Content）
 
 ## 恢复上下文指令
 
