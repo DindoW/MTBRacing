@@ -1,0 +1,14 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{BFBDDB76-447C-73FA-770F-8EACDC6F4EAE}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "MTBRacing",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": []
+}
