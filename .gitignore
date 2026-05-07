@@ -12,6 +12,7 @@ Build/
 *.VC.db-shm
 *.VC.db-wal
 *.VC.opendb
+*.vsconfig
 
 # Compiled Assets
 *.slo
@@ -20,6 +21,7 @@ Build/
 *.obj
 
 # Visual Studio
+*.sln
 *.pdb
 *.ilk
 *.exp
