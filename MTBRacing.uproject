@@ -1,14 +1,23 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{BFBDDB76-447C-73FA-770F-8EACDC6F4EAE}",
+	"EngineAssociation": "{807AF1FA-4422-0814-B6B4-4F97DFD5182C}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
 		{
 			"Name": "MTBRacing",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"ChaosVehicles"
+			]
 		}
 	],
-	"Plugins": []
+	"Plugins": [
+		{
+			"Name": "ChaosVehiclesPlugin",
+			"Enabled": true
+		}
+	]
 }

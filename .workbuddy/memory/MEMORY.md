@@ -14,12 +14,19 @@
 
 | 技术 | 说明 |
 |------|------|
-| 引擎 | UE 5.4 源码版（`C:\Users\Dindo\Documents\repo\UE_5.4`） |
+| 引擎 | UE 5.4 源码版 |
 | 载具 | Chaos Vehicle System |
 | 能力 | Gameplay Ability System (GAS) |
 | 动画 | Animation Blueprint + Control Rig |
 | 网络 | UE5 Replication |
 | 语言 | C++ + Blueprint 混合 |
+
+## 开发环境（多台机器）
+
+| 机器 | 引擎路径 | 项目路径 |
+|------|----------|----------|
+| 台式机 | `C:\Users\Dindo\Documents\repo\UE_5.4` | `C:\Users\Dindo\Documents\repo\Unreal Projects\MTBRacing\` |
+| 笔记本 | `D:\Projects\UnrealEngine` | `D:\Projects\MTBRacing\` |
 
 ## 开发工作流
 
@@ -46,7 +53,7 @@ AI 不做的：
 ## 当前进度
 
 - [x] Phase 0: Git 环境配置
-- [ ] Phase 1: 载具基础（待开始）
+- [ ] Phase 1: 载具基础（进行中 — 第 5 步 Enhanced Input 待做）
 - [ ] Phase 2: GAS 能力系统
 - [ ] Phase 3: 动画系统
 - [ ] Phase 4: 多人网络
