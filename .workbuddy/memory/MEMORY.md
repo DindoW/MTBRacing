@@ -1,7 +1,24 @@
 # MTBRacing 项目 Memory
 
 > 此文件由 WorkBuddy 维护，用于跨端开发时恢复 AI 上下文
-> 最后更新：2026-06-09
+> 最后更新：2026-08-30
+
+## 记忆系统约定（2026-08-30 统一）
+
+项目 AI 上下文只维护一套记忆系统，位于 `.workbuddy/memory/`：
+
+| 用途 | 文件 |
+|---|---|
+| 每日工作日志 | `.workbuddy/memory/YYYY-MM-DD.md`（追加式） |
+| 长期项目记忆 | `.workbuddy/memory/MEMORY.md`（本文件，跨端恢复用） |
+| 开发计划 | `docs/DEV_PLAN.md`（阶段任务分解） |
+| 代码 & 资产 | `Source/` + `Content/`（UE 标准） |
+
+**历史遗留清理**：
+- ❌ 已删除 `.codebuddy/`（内容已迁移到 08-30 日志）
+- ❌ 不再使用根目录 MEMORY.md / FAQ.md / 其他形式
+
+**新会话恢复上下文**：读本文件 + `docs/DEV_PLAN.md` + 最近 1~2 篇日志即可。
 
 ## 项目基本信息
 
@@ -96,8 +113,8 @@ Content/
   - [x] BikePawn（最简 APawn 实现，Cube + FloatingPawnMovement）
   - [x] PIE 验证 WASD 移动 / Space 刹车（2026-06-08）
   - [x] 1.7 手感调参（山地版基线，2026-06-09）
-- [ ] **当前节点：阶段性提交 Phase 1 成果到 GitHub**
-- [ ] Phase 2: GAS 能力系统（耐力、Boost）
+- [x] Git 提交 Phase 1 成果到 GitHub（2026-06-09，commit 857315b）
+- [ ] **当前节点：Phase 2 GAS 能力系统（耐力、Boost）**
 - [ ] Phase 3: 比赛流程（PlayerStart/检查点/计时器/结算 UI）
 - [ ] Phase 4: 多人网络
 - [ ] Phase 5: 视觉替换（骑手 + 自行车骨骼模型）
@@ -150,7 +167,14 @@ Content/
 - 手感调参完成，采用山地版（MaxSpeed=2000 / Accel=1800 / Decel=1500 / TurnSpeed=140）
 - 数值仅保存在 BP_CubeBike 实例，C++ 默认值保持不动（用户决策）
 - 文档同步：DEV_PLAN.md 1.7 勾选 Phase 1 完成，调参表新增"BP 实例值"列
-- 下一步：先 git commit + push 把 Phase 1 成果固化到 GitHub，再进 Phase 2 GAS
+- Phase 1 成果 push 到 GitHub（commit 857315b）
+
+### 2026-08-30（记忆系统整合）
+- 项目搁置 2 个多月重启
+- 决策：以 `.workbuddy/memory/` 为唯一记忆系统，删除 `.codebuddy/`
+- 迁移 `.codebuddy/memory/2026-06-09.md` 里的 2 条 Q&A（AddMovementInput / ControlInputVector 数据流）到 08-30 日志
+- 目录约定写入本文件顶部
+- 后续 Phase 2 GAS 采用标准 AI 协作模式（讲架构 + 用户自己写代码）
 
 ## 恢复上下文指令
 
