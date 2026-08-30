@@ -9,6 +9,8 @@
 
 | 用途 | 文件 |
 |---|---|
+| **项目规矩（强约束）** | `.workbuddy/rules/mtbracing-rules.md`（AI 自动加载的精简版） |
+| **项目规矩（完整版）** | `docs/PROJECT_RULES.md`（R1~R8 全部条款 + 来源索引） |
 | 每日工作日志 | `.workbuddy/memory/YYYY-MM-DD.md`（追加式） |
 | 长期项目记忆 | `.workbuddy/memory/MEMORY.md`（本文件，跨端恢复用） |
 | 开发计划 | `docs/DEV_PLAN.md`（阶段任务分解） |
@@ -18,7 +20,7 @@
 - ❌ 已删除 `.codebuddy/`（内容已迁移到 08-30 日志）
 - ❌ 不再使用根目录 MEMORY.md / FAQ.md / 其他形式
 
-**新会话恢复上下文**：读本文件 + `docs/DEV_PLAN.md` + 最近 1~2 篇日志即可。
+**新会话恢复上下文**：读 `.workbuddy/rules/mtbracing-rules.md`（规矩） + 本文件 + `docs/DEV_PLAN.md` + 最近 1~2 篇日志即可。
 
 ## 项目基本信息
 
@@ -169,11 +171,15 @@ Content/
 - 文档同步：DEV_PLAN.md 1.7 勾选 Phase 1 完成，调参表新增"BP 实例值"列
 - Phase 1 成果 push 到 GitHub（commit 857315b）
 
-### 2026-08-30（记忆系统整合）
+### 2026-08-30（记忆系统整合 + 项目规矩成文）
 - 项目搁置 2 个多月重启
 - 决策：以 `.workbuddy/memory/` 为唯一记忆系统，删除 `.codebuddy/`
 - 迁移 `.codebuddy/memory/2026-06-09.md` 里的 2 条 Q&A（AddMovementInput / ControlInputVector 数据流）到 08-30 日志
 - 目录约定写入本文件顶部
+- **规矩成文**：从 DEV_PLAN.md + MEMORY.md + 全部日志沉淀出 R1~R8 八类规矩
+  - `docs/PROJECT_RULES.md` — 完整版（含来源索引、修订记录）
+  - `.workbuddy/rules/mtbracing-rules.md` — AI 强约束精简版（自动加载）
+  - 两份文件分工：精简版是 AI 每次必读的硬约束，完整版是人看的详细依据
 - 后续 Phase 2 GAS 采用标准 AI 协作模式（讲架构 + 用户自己写代码）
 
 ## 恢复上下文指令
