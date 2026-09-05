@@ -50,32 +50,53 @@
 | 台式机 | `C:\Users\Dindo\Documents\repo\UE_5.4` | `C:\Users\Dindo\Documents\repo\Unreal Projects\MTBRacing\` |
 | 笔记本 | `D:\Projects\UnrealEngine`（5.4.4-release 源码版） | `D:\Projects\MTBRacing\` |
 
-### 换机同步已知坑：packed-refs 陈旧记录导致 origin/main 读到远古值
+### ⚠ 本机 Git 缺陷：远程跟踪 ref 无法写入（2026-09-06 定位）
 
-**判据**：`git fetch` / `git push` 报告成功（`旧sha..新sha main -> origin/main`），
-但 `git rev-parse origin/main` 仍返回一个很旧的 sha。
+**环境**：git 2.55.0.windows.3。**这不是普通的 packed-refs 陈旧问题，是 git 的 ref 写入路径坏了。**
 
-**危害极大**：此时 `git diff HEAD origin/main` 实际在跟远古提交比对，
-会输出「大量文件被删除」的假 diff，看着像远程删库。
-**绝对不能据此做 `reset --hard` / `push --force`**。
-辅助判据：若 `git log HEAD..origin/main` 为空却又显示大量删除，就是逻辑矛盾，必属此坑。
+**症状**：`git fetch` / `git push` / `git update-ref` 全都报告成功（exit 0，
+fetch 甚至打印 `旧sha..新sha main -> origin/main`），但 `git rev-parse origin/main`
+永远返回旧值，`git status` 持续误报 `ahead N`。
 
-**根因**：ref 只存在于 `.git/packed-refs` 且该文件长期没被重写
-（本项目实测 mtime 停在 4 月 20 日，期间所有 fetch/push 都没更新它）。
-`git ls-remote origin refs/heads/main` 能拿到远程真实值 —— 用它取证。
+**决定性证据**（`find .git -newer` 取证）：执行 `git update-ref` 后，
+磁盘上**只有 `.git/logs/refs/remotes/origin/main`（reflog）被写入**，
+ref 本身既没写 loose（`.git/refs/remotes/origin/main` 不存在）
+也没写 packed（`packed-refs` mtime 不变）。reflog 里能看到一次次"成功"记录，
+但 ref 从未落地。`GIT_TRACE_REFS=1` 显示事务 `finish: 0` 且旧值为全 0
+（git 自己认为 ref 不存在，与 `for-each-ref` 读到的值矛盾）。
 
-**正确修法（2026-09-06 验证有效，一次到位）**：
+**已排除**：`.git` / packed-refs 不可写、READONLY 属性、reftable 后端、
+OneDrive 同步回滚、自定义 hook（那 4 个是 Git LFS 标准安装）、
+WorkBuddy 沙箱隔离（无沙箱下同样失败）、junction/reparse point。
+
+**危害**：`git diff HEAD origin/main` 会拿远古提交做对比，输出「大量文件被删除」
+的假 diff，看着像远程删库。**绝不能据此 `reset --hard` / `push --force`**。
+矛盾判据：`git log HEAD..origin/main` 为空却显示大量删除 → 必属此坑。
+取证用 `git ls-remote origin refs/heads/main` 拿远程真实值。
+
+**修法（shell 直写，已验证可靠；git 自己的命令无效）**：
 ```bash
-REAL=$(git ls-remote origin refs/heads/main | cut -f1)
+REAL=$(git ls-remote origin refs/heads/main | cut -f1)   # 远程真实值
+LOCAL=$(cat .git/refs/heads/main)                        # 本地 HEAD
 mkdir -p .git/refs/remotes/origin
-printf '%s\n' "$REAL" > .git/refs/remotes/origin/main   # loose ref 优先级高于 packed-refs
-git pack-refs --all                                      # 关键：强制重写 packed-refs，消除陈旧源
+printf '%s\n' "$REAL" > .git/refs/remotes/origin/main    # loose ref 优先级最高
+# packed-refs 里的陈旧记录也要一起改，否则 loose ref 被清理后会复现
+cp .git/packed-refs .git/packed-refs.bak
+{ echo '# pack-refs with: peeled fully-peeled sorted '
+  printf '%s refs/heads/main\n' "$LOCAL"
+  printf '%s refs/remotes/origin/main\n' "$REAL"; } > .git/packed-refs
 ```
-只写 loose ref 是**不彻底的**（08-30 那次就是，后续 push 时 loose ref 被清掉、
-陈旧的 packed-refs 又浮出水面，问题复发）。必须跟一次 `git pack-refs --all`。
+校验三值一致：`git rev-parse HEAD` / `git rev-parse origin/main` /
+`git ls-remote origin refs/heads/main`，然后 `git fsck` 应零报错。
 
-修完校验三值必须一致：`git rev-parse HEAD` / `git rev-parse origin/main` /
-`git ls-remote origin refs/heads/main`。
+**⚠ 不要用 `git pack-refs --all`**：08-30 和 09-06 两次都试过，它能把当时的值
+写进 packed-refs，但会顺手删掉 loose ref 和 `refs/remotes/origin/` 目录，
+下次 push 后问题立刻复发。只能用上面的 shell 直写方案。
+
+**建议根治方向**（下次有空时）：这大概率是 git 2.55.0.windows.3 的缺陷或本仓库
+ref 存储的局部损坏。可尝试 ① 降级/升级 Git for Windows；
+② `git clone` 一份新的本地副本，把工作区文件拷过去（最干净）。
+在那之前，每次 push/fetch 后都要跑一遍上面的修法脚本。
 
 
 ## 开发工作流
