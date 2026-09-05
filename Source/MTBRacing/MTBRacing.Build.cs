@@ -14,14 +14,16 @@ public class MTBRacing : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"InputCore",
-			"EnhancedInput"
+			"EnhancedInput",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		// 按需添加：
 		// - Chaos 载具系统：ChaosVehicles
-		// - GAS 能力系统：GameplayAbilities, GameplayTags, GameplayTasks
 		// - Slate UI：Slate, SlateCore
 		// - 网络子系统：OnlineSubsystem
 	}

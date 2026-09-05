@@ -14,7 +14,7 @@ class MTBRACING_API AMTBGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
-	
+public:
 	AMTBGameMode();
 	
 };
