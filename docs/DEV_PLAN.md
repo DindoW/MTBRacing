@@ -97,12 +97,23 @@
 ### Phase 2: GAS 能力系统
 **前置**：Phase 1 完成、能稳定 PIE。
 
-- [ ] 2.1 Build.cs 添加 `GameplayAbilities` / `GameplayTags` / `GameplayTasks`
-- [ ] 2.2 `UMTBAttributeSet` —— Stamina / MaxStamina / CurrentSpeed
-- [ ] 2.3 `UMTBAbilitySystemComponent` 挂到 BikePawn
+- [x] 2.1 Build.cs 添加 `GameplayAbilities` / `GameplayTags` / `GameplayTasks`（2026-08-31）
+      同时清除 `.uproject` 里 ChaosVehicles 残留（R3 合规）
+- [x] 2.2 `UMTBAttributeSet` —— Stamina / MaxStamina / StaminaRegenRate / MaxSpeed（2026-09-05）
+      ⚠️ 遗留：缺 `PreAttributeBaseChange` 覆写，2.5 前必须补（详见文件内 TODO）
+- [ ] 2.3 ASC 挂到 BikePawn + MaxSpeed→Movement 搭桥
 - [ ] 2.4 `GA_Boost` —— 提升 MaxSpeed，消耗 Stamina（用 GameplayEffect 不直接改属性）
 - [ ] 2.5 `GE_StaminaRegen` —— 每秒恢复耐力
 - [ ] 2.6 简易 HUD：耐力条 + 速度
+
+> **属性设计修正（2026-08-30）**：原计划的 `CurrentSpeed` 不做 GameplayAttribute。
+> 判据是"会不会被 GameplayEffect 修改" —— 当前速度是 `UFloatingPawnMovement::Velocity`
+> 的派生只读值，没有任何 GE 会改它，放进 AttributeSet 等于每帧手动同步 + 白占复制带宽。
+> HUD 直接读 `Movement->Velocity.Size()`。改为 `StaminaRegenRate` + `MaxSpeed`。
+>
+> **建议实施顺序**：2.5 提到 2.4 之前。GE 是纯 Editor 配置不用写代码，
+> 用它先验证"属性能被 GE 改动"这条链路通不通，再写更复杂的 GA_Boost，
+> 出问题时能确定问题在 GA 而不在 GE。
 
 ### Phase 3: 比赛流程（先于多人，方便单机调试）
 - [ ] 3.1 PlayerStart + 起跑线
@@ -177,10 +188,10 @@ ABikePawn : APawn
 Source/MTBRacing/
 ├── Core/                  ✅ MTBGameMode
 ├── Pawn/                  ✅ BikePawn
-├── GAS/                     Phase 2 加入
-│   ├── MTBAttributeSet
-│   ├── MTBAbilitySystemComponent
-│   └── Abilities/
+├── Gas/                   ✅ MTBAttributeSet（2.2 完成）
+│   ├── MTBAttributeSet      ✅
+│   ├── MTBAbilitySystemComponent  Phase 2.3
+│   └── Abilities/           Phase 2.4 起
 │       ├── GA_Boost
 │       └── GA_AirTrick
 ├── Race/                    Phase 3 加入

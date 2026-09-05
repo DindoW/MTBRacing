@@ -28,7 +28,8 @@
 ## 3. 代码与资产命名
 
 - 项目类前缀 `MTB`（`AMTBGameMode`、`UMTBAttributeSet`）
-- Source 严格 Public/Private 分离，按子系统分目录（Core/ Pawn/ GAS/ Race/ Player/）
+- Source 严格 Public/Private 分离，按子系统分目录（Core/ Pawn/ Gas/ Race/ Player/）
+- 子目录名统一 PascalCase，缩写词照此处理：写 `Gas/` 不写 `GAS/`
 - 资产前缀：`BP_` `SK_` `SM_` `IMC_` `IA_` `GA_` `GE_`
 - 调参用 `UPROPERTY(EditAnywhere)`；C++ 给保守默认值，最终手感数值存在 BP 实例，**不因 BP 调好就回改 C++ 默认值**
 

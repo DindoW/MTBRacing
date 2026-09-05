@@ -98,7 +98,8 @@ Source/MTBRacing/
 └── Private/ (实现)
 ```
 - 严格 Public/Private 分离
-- 按子系统分子目录：Core/ Pawn/ GAS/ Race/ Player/
+- 按子系统分子目录：Core/ Pawn/ Gas/ Race/ Player/
+- 子目录名统一 **PascalCase**（首字母大写，其余小写）。缩写词也照此处理：写 `Gas/` 不写 `GAS/`，与 UE 引擎自身目录习惯一致
 
 ### R4.2 命名
 - 类前缀：`A`(Actor) / `U`(UObject) / `F`(Struct) / `E`(Enum) / `I`(Interface)
@@ -217,3 +218,7 @@ Content/
 ## 附录 B：修订记录
 
 - **v1（2026-08-30）**：首次整理，从 DEV_PLAN v2 + MEMORY.md（08-30 版）+ 全部日志中沉淀
+- **v1.1（2026-09-06）**：R4.1 子目录命名从 `GAS/` 改为 `Gas/`，并补充 PascalCase 通则。
+  起因：Phase 2.2 实际建的是 `Source/MTBRacing/{Public,Private}/Gas/`，与原文档的 `GAS/` 不一致。
+  决策：改文档而非改目录 —— `Gas/` 符合 UE 的 PascalCase 习惯，全大写反而是例外。
+  同步文件：`docs/PROJECT_RULES.md`、`.workbuddy/rules/mtbracing-rules.md`、`docs/DEV_PLAN.md`

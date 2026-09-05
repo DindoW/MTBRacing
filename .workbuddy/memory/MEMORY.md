@@ -50,6 +50,18 @@
 | 台式机 | `C:\Users\Dindo\Documents\repo\UE_5.4` | `C:\Users\Dindo\Documents\repo\Unreal Projects\MTBRacing\` |
 | 笔记本 | `D:\Projects\UnrealEngine`（5.4.4-release 源码版） | `D:\Projects\MTBRacing\` |
 
+### 换机同步已知坑：packed-refs 静默写入失败
+
+若 `git fetch` 报成功（`旧sha..新sha main -> origin/main`）但 `git rev-parse origin/main` 仍返回旧值 —— 说明 ref 只在 `packed-refs` 且写入被拦截（Windows 下 Editor/VS 持有 `.git` 句柄时发生，exit code 仍是 0）。
+
+**此时 `git diff HEAD origin/main` 会输出完全错误的结果**（会显示成大量文件被删除，像是远程删库），绝对不能据此做 `reset --hard` 或 `push --force`。
+
+修复：手动写 loose ref 覆盖（详见 `2026-08-30.md`）
+```bash
+mkdir -p .git/refs/remotes/origin && printf '<40位sha>\n' > .git/refs/remotes/origin/main
+```
+
+
 ## 开发工作流
 
 - **写代码**：Visual Studio / Rider + CodeBuddy 插件
@@ -74,19 +86,25 @@ AI 默认不做：
 
 **例外**：当用户**明确要求**"帮我写"、"重写"、"改代码"时，AI 才直接动文件。这种情况要在日志里记录，避免渐渐变成"代写默认"。
 
-## 当前源码结构（2026-06-08）
+## 当前源码结构（2026-09-05）
 
 ```
 Source/MTBRacing/
-├── MTBRacing.Build.cs       (依赖：Core/CoreUObject/Engine/InputCore/EnhancedInput)
+├── MTBRacing.Build.cs       (Core/CoreUObject/Engine/InputCore/EnhancedInput
+│                            + GameplayAbilities/GameplayTags/GameplayTasks)
 ├── MTBRacing.h / .cpp
 ├── Public/
 │   ├── Core/MTBGameMode.h
-│   └── Pawn/BikePawn.h      (APawn 派生，最简实现)
+│   ├── Pawn/BikePawn.h      (APawn 派生，最简实现)
+│   └── Gas/MTBAttributeSet.h
 └── Private/
     ├── Core/MTBGameMode.cpp (DefaultPawnClass = ABikePawn)
-    └── Pawn/BikePawn.cpp
+    ├── Pawn/BikePawn.cpp
+    └── Gas/MTBAttributeSet.cpp
 ```
+
+> 子目录命名统一 **PascalCase**：写 `Gas/` 不写 `GAS/`（2026-09-06 定调，
+> 已同步到 `PROJECT_RULES.md` R4.1、`mtbracing-rules.md`、`DEV_PLAN.md`）。
 
 ## 当前 Content 资产
 
@@ -117,11 +135,55 @@ Content/
   - [x] 1.7 手感调参（山地版基线，2026-06-09）
 - [x] Git 提交 Phase 1 成果到 GitHub（2026-06-09，commit 857315b）
 - [ ] **当前节点：Phase 2 GAS 能力系统（耐力、Boost）**
+  - [x] 2.1 Build.cs + .uproject 加 GAS 三模块，同时清除 ChaosVehicles 残留（08-31）
+  - [x] 2.2 `UMTBAttributeSet` —— Stamina / MaxStamina / StaminaRegenRate / MaxSpeed（09-05）
+  - [ ] **⚙ 下次开工第一件事：补 `PreAttributeBaseChange`**（见下方遗留问题）
+  - [ ] 2.3 ASC 挂 BikePawn + MaxSpeed→Movement 搭桥
+  - [ ] 2.4 `GA_Boost`
+  - [ ] 2.5 `GE_StaminaRegen`
+  - [ ] 2.6 简易 HUD（耐力条 + 速度）
 - [ ] Phase 3: 比赛流程（PlayerStart/检查点/计时器/结算 UI）
 - [ ] Phase 4: 多人网络
 - [ ] Phase 5: 视觉替换（骑手 + 自行车骨骼模型）
 - [ ] Phase 6: 物理升级（可选回归 Chaos Vehicle）
 - [ ] Phase 7: 打磨优化
+
+## ⚠ 当前遗留问题（下次开工先处理）
+
+### 🔴 P0：`UMTBAttributeSet` 缺 `PreAttributeBaseChange` —— 2.5 会真爆
+
+已从引擎源码确认两条**完全独立**的钳制路径：
+- CurrentValue：`AttributeSet.cpp:99-102` — `PreAttributeChange` → `SetCurrentValue`
+- BaseValue：`GameplayEffect.cpp:3720-3732` — `PreAttributeBaseChange` → `SetBaseValue`
+
+当前只覆写了前者。`GE_StaminaRegen`（Infinite + Period=1.0）是 Periodic GE，
+每次触发按 Instant 处理、改 BaseValue → **Stamina BaseValue 无上限增长**（100→110→…→700）。
+
+欺骗性极强：`GetStamina()` 读 CurrentValue，被钳到 100，HUD 显示 100/100 一切正常。
+但 Boost 扣耐力时要先消耗掰虚高的 BaseValue → 表现为"Boost 怎么用都不掉耐力"，
+然后到某个点突然暴跌。从现象无法反推到根因。
+
+**修法要点**：签名结尾必须有 `const`（`AttributeSet.h:226`），
+漏了就不是覆写而是新增函数 —— 编译过但永不被调用，又一个静默失效。
+
+### 🟡 P1：同文件其他 TODO（已写入代码注释）
+
+1. `PreAttributeChange` 没调 `Super::` —— 5.4 基类是空实现故无功能 bug，
+   但插入中间基类时会静默跳过它的钳制
+2. `MaxStamina = 100.;` 少 `f` 后缀（double 字面量，功能无碍但不一致）
+3. `MaxSpeed` 无钳制 —— 配错系数的 GE 能让它变负数，车会往后飘
+4. `MaxStamina` 变小时 `Stamina` 不跟随收缩（Phase 2 不会触发）
+
+### 🟡 P1：`HandleSteering` 旋转积分位置错误（Phase 4 会爆）
+
+在输入回调里调 `GetWorld()->GetDeltaSeconds()` 做积分。输入回调每帧触发次数
+不保证为 1（按住时 Triggered 可能多次、松开还有 Completed），转向速度会随触发次数漂移。
+正确做法：回调只存 `SteeringInput`，在 `Tick` 里统一积分（也符合 "Tick 逻辑在 C++"）。
+当前单机手感已调好、问题被掩盖，但网络预测阶段必爆。
+
+### ✅ 已修（2026-09-06）
+
+- `MTBGameMode.h` 构造函数补上 `public:`（原先靠 `GENERATED_BODY()` 展开末尾恰好是 `public:` 才能编译，属巧合）
 
 ## 手感调参基线（山地版，2026-06-09）
 
@@ -135,6 +197,57 @@ Content/
 | TurnSpeed | 120 | **140** |
 
 特征：平衡型，速度感适中、转向灵活、刹车干脆。后续 GAS Boost 调参以此为对照基线。
+
+## UE 5.4 GAS 关键事实（从本机引擎源码实测，非教程转述）
+
+源码位置：`C:\Users\Dindo\Documents\repo\UE_5.4\Engine\Plugins\Runtime\GameplayAbilities\Source\GameplayAbilities\Public\`
+
+### 1. `ATTRIBUTE_ACCESSORS` 宏引擎【不提供】，必须项目自己 #define
+
+`AttributeSet.h:418` 里的 `ATTRIBUTE_ACCESSORS` 只是**注释里的建议写法**，不是真宏。引擎只提供 4 个基础宏（`AttributeSet.h:427/434/440/450`）：
+`GAMEPLAYATTRIBUTE_PROPERTY_GETTER` / `_VALUE_GETTER` / `_VALUE_SETTER` / `_VALUE_INITTER`
+
+必须在自己的 AttributeSet 头文件里把这 4 个组合成 `ATTRIBUTE_ACCESSORS`。所有网上教程都直接用它却不说这点，是最常见的首个编译错误来源。
+
+### 2. GameplayEffect 在 5.3 起改为 Component 架构（网上老教程全部过时）
+
+`GameplayEffect.h` 里有大量 `UE_DEPRECATED(5.3, ...)`。旧的 GE 内联字段被拆成独立 `UGameplayEffectComponent`，目录：`Public/GameplayEffectComponents/`（10 个）。
+
+对照表（旧 → 新）：
+- `Modifiers` Tag 需求 → `UTargetTagRequirementsGameplayEffectComponent`
+- 授予 Tag → `UTargetTagsGameplayEffectComponent`
+- 资产 Tag → `UAssetTagsGameplayEffectComponent`
+- 授予能力 → `UAbilitiesGameplayEffectComponent`
+- 连带效果 → `UAdditionalEffectsGameplayEffectComponent`
+- 概率生效 → `UChanceToApplyGameplayEffectComponent`
+- 免疫 → `UImmunityGameplayEffectComponent`
+- 移除其他 GE → `URemoveOtherGameplayEffectComponent`
+
+**判据**：看教程时若 GE 的 Details 面板截图里有 "Granted Tags"、"Ongoing Tag Requirements" 等内联字段，就是 5.2 及更早的，5.4 里要改用对应 Component。
+
+### 3. `FGameplayAttributeData` 双值结构（`AttributeSet.h:19-53`）
+
+`BaseValue`（永久值，Instant GE 改）+ `CurrentValue`（含临时 buff，Duration/Infinite GE 改）。
+Boost 用 Infinite GE 抬 CurrentValue，移除后自动回落 —— 不需要手写"恢复原值"逻辑。
+
+### 4. ASC 三种复制模式（`AbilitySystemComponent.h:85-93`）
+
+- `Minimal` — 只复制最小信息。**注释明确：不适用于 Owned ASC（玩家自己的），要用 Mixed**
+- `Mixed` — 对 SimulatedProxy 最小、对 Owner/AutonomousProxy 完整。玩家角色标准选项
+- `Full` — 全量复制给所有人。单机 / AI 用
+
+### 5. 关键 API 签名（已实测）
+
+- 属性变化监听：`ASC->GetGameplayAttributeValueChangeDelegate(Attr)`（`AbilitySystemComponent.h:534`）；旧的 `RegisterGameplayAttributeEvent` 已被建议替换
+- 初始化：`InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)`（`:1547`）
+- AttributeSet 三个钩子：`PreAttributeChange`(:215) / `PreAttributeBaseChange`(:226) / `PostGameplayEffectExecute`(:201)
+
+### 参考文献（按可信度排序）
+
+1. 本机引擎源码（最高权威，版本精确匹配）
+2. tranek/GASDocumentation — https://github.com/tranek/GASDocumentation （社区事实标准，UE5.3 基准）
+3. Epic 官方 GAS 文档 — https://dev.epicgames.com/documentation/unreal-engine/gameplay-ability-system-for-unreal-engine
+4. Epic 官方 Lyra Abilities — https://docs.unrealengine.com/en-US/abilities-in-lyra-in-unreal-engine
 
 ## 关键决策记录
 
@@ -181,6 +294,29 @@ Content/
   - `.workbuddy/rules/mtbracing-rules.md` — AI 强约束精简版（自动加载）
   - 两份文件分工：精简版是 AI 每次必读的硬约束，完整版是人看的详细依据
 - 后续 Phase 2 GAS 采用标准 AI 协作模式（讲架构 + 用户自己写代码）
+
+### 2026-08-30 晚 ~ 08-31（Phase 2 启动，2.1 完成）
+- Code review 发现 `.uproject` 残留 ChaosVehicles（6-08 转向时只清了 Build.cs），已随 2.1 一并清除
+- **属性设计修正**：`CurrentSpeed` 不做 GameplayAttribute。判据 = "会不会被 GE 修改"；
+  它是 `Movement->Velocity` 的派生只读值 → 改为 `StaminaRegenRate` + `MaxSpeed`
+- **ASC 挂载决策：BikePawn**（非 PlayerState）。理由：竞速重置检查点用 `SetActorLocation`
+  不销毁 Pawn，PlayerState 的"跨 Pawn 存活"优势用不上；Phase 4 若需要再迁移
+- ReplicationMode：Phase 2 单机用 `Full`，Phase 4 转 `Mixed`（`Minimal` 不能用于玩家自己的 ASC）
+- 建议实施顺序调整：2.5（GE，纯 Editor 配置）提到 2.4（GA_Boost）之前，先验证 GE 管道
+- 2.1 三个验证点通过：Editor 打开 / Plugins 里 GAS 已启用 / Project Settings 能搜到 Gameplay Tags
+
+### 2026-09-05（2.2 完成 + 深度 review）
+- 用户自己写完 `UMTBAttributeSet`，编译通过。四个属性 / REPNOTIFY / 复制条件写法均正确
+- **破例记录（R1 例外）**：用户明确要求"review 时把知识点写在注释里" →
+  AI 直接改了 `Gas/MTBAttributeSet.h/.cpp`，**只加注释和 TODO 标记，不改任何代码逻辑**，
+  bug 修复留给用户自己动手
+- 发现 P0 真 bug：缺 `PreAttributeBaseChange`（详见上方"当前遗留问题"章节）
+
+### 2026-09-06（目录命名定调 + 进度存档）
+- **`Gas/` 定为约定**（非 `GAS/`）。理由：符合 UE 的 PascalCase 目录习惯，全大写反而是例外
+- 已同步三份文档：`PROJECT_RULES.md` R4.1（附录 B 记 v1.1）、
+  `mtbracing-rules.md` 第 3 节、`DEV_PLAN.md` 目标源码结构
+- 补充通则：子目录名统一 PascalCase，缩写词照此处理
 
 ## 恢复上下文指令
 
